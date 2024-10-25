@@ -17,7 +17,7 @@ totalerrors_idk=zeros(5,7);
 total_undecode=zeros(5,7);
 total_decode=zeros(5,7);
 
-for fd=1000
+for fd=4000
 %% Parameters setting
 
 Nfft=2048;
@@ -27,7 +27,7 @@ Ng=Nfft/4;
 Nvc=0;        % Vitural carrier
 Nframe=5;
 
-M_mod=2;  % Modulation order
+M_mod=16;  % Modulation order
 
 channeltype=3; % 1 滑行 2 停泊 3 起飞/降落 4 巡航
 % fd=1000; % Doppler shift
@@ -36,14 +36,14 @@ fmax=500; % enroute max Doppler
 
 R_code=1/2; % channel code rate
 
-EbN0=[20:5:30];
+EbN0=[0:5:30];
 
-% SNR_dB=[0:5:30]
+% SNR_dB=[0:5:30]g
 ExtraNoise=0; % Extra noise sample
 EndNoise=0;  % End noise sample
 CFO=2.5;
 
-max_iter=1e4; % number of iter
+max_iter=1; % number of iter
 
 Nps=2; % the space of pilot symbol
 
