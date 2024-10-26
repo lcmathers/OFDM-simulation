@@ -14,7 +14,7 @@ raw_data=randi([0 1],20480,1);
 M=4;
 modSignal = qammod(code_data,M,'InputType','bit','UnitAveragePower',true);
 
-snrdB = 10; % SNR in dB
+snrdB = 0; % SNR in dB
 
 receivedSignal = awgn(modSignal,snrdB);
 

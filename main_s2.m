@@ -17,7 +17,7 @@ totalerrors_idk=zeros(5,7);
 total_undecode=zeros(5,7);
 total_decode=zeros(5,7);
 
-for fd=4000
+for fd=0
 %% Parameters setting
 
 Nfft=2048;
@@ -99,14 +99,9 @@ for i=1:length(SNR_dB)
 
         trellis = poly2trellis(7,[171 133]);
 
-        code_data=convenc(raw_data,trellis);
+        % code_data=convenc(raw_data,trellis);
 
-        code_data=LDPC_code(raw_data);
-
-        [cfgLDPCEnc,decodercfg] = generateConfigLDPC(1/2);  % 324/648
-
-        code_data = ldpcEncode(infoBits,cfgLDPCEnc); 
-
+        [code_data,last_len]=LDPC_code(raw_data); % LDPC 编码
 
         % inter_data=matintrlv(code_data,length(code_data)/20,20);
         inter_data=tx_interleaver(code_data,128);
@@ -161,25 +156,21 @@ for i=1:length(SNR_dB)
         % h=1;
         [Y_est_data,H_DFT,noise_mean]=frame_decompose(y_data,Nfft,Nsym,Ndata,Nvc,Nframe,channeltype,X_pilot,Nps,pilot_loc,noise_var);
 
-        noise_var_eq=mean(noise_mean);
+        % noise_var_eq=mean(noise_mean);
 
         H_DFT_dB=10*log10(abs(H_DFT.*conj(H_DFT)));
+        
+        noise_var_eq=mean(abs(noise_var./H_DFT));
+        
+        % Y_data_1=qamdemod(Y_est_data.',M_mod,'OutputType','bit','UnitAveragePower',true);
 
-        Y_data_1=qamdemod(Y_est_data.',M_mod,'OutputType','bit','UnitAveragePower',true);
+        % total_undecode(fd/1000+1,i)=total_undecode(fd/1000+1,i)+sum(Y_data_1~=inter_data);
 
-        total_undecode(fd/1000+1,i)=total_undecode(fd/1000+1,i)+sum(Y_data_1~=inter_data);
+        Y_data_llr=qamdemod(Y_est_data.',M_mod,'OutputType','approxllr','NoiseVariance',noise_var_eq,'UnitAveragePower',true);
 
-       % Y_data_llr=qamdemod(Y_est_data',M_mod,'OutputType','approxllr','NoiseVariance',noise_var_eq,'UnitAveragePower',true);
+        y_llr_deinter=rx_deinterleaver(Y_data_llr,128);
 
-       % Y_data_deinter= matdeintrlv(Y_data_1,length(Y_data_1)/20,20);
-       y_data_deinter=rx_deinterleaver(Y_data_1,128);
-
-        % Y_llr_deinter= matdeintrlv(Y_data_llr,length(Y_data_llr)/40,40);
-
-        % Y_llr_deinter=double(Y_llr_deinter);
-
-        tblen=32;
-        decode_data = vitdec(y_data_deinter,trellis,tblen,'trunc','hard');
+        decode_data = LDPC_decode(y_llr_deinter,last_len);
 
         % decode_data_soft = vitdec(Y_llr_deinter,trellis,tblen,'cont','unquant');
 
@@ -193,9 +184,9 @@ for i=1:length(SNR_dB)
 
         % total_biterrors_soft(i)=total_biterrors_soft(i)+sum(decode_data_soft~=raw_data);
         
-        BER_ofdm(i)=total_biterrors(i)/(iter*(length(raw_data)-tblen));
+        BER_ofdm(i)=total_biterrors(i)/(iter*(length(raw_data)));
 
-        BER_ofdm_soft(i)=total_biterrors_soft(i)/(iter*(length(raw_data)-tblen));
+        BER_ofdm_soft(i)=total_biterrors_soft(i)/(iter*(length(raw_data)));
 
 
 
