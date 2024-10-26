@@ -1,7 +1,7 @@
 
 %% Deinterleaver
 
-function [deintrlvOut]=ofdm_deinterleaver(intrlvOut,deintrlvLen)
+function [deintrlvOut]=rx_deinterleaver(intrlvOut,deintrlvLen)
 
 lenIn = size(intrlvOut,1);
 numIntCols = ceil(lenIn/deintrlvLen);

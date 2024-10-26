@@ -101,8 +101,15 @@ for i=1:length(SNR_dB)
 
         code_data=convenc(raw_data,trellis);
 
+        code_data=LDPC_code(raw_data);
+
+        [cfgLDPCEnc,decodercfg] = generateConfigLDPC(1/2);  % 324/648
+
+        code_data = ldpcEncode(infoBits,cfgLDPCEnc); 
+
+
         % inter_data=matintrlv(code_data,length(code_data)/20,20);
-        inter_data=tx_interleaver(code_data,20);
+        inter_data=tx_interleaver(code_data,128);
 
         X_data_1=qammod(inter_data,M_mod,'InputType','bit','UnitAveragePower',true);
 
@@ -165,7 +172,7 @@ for i=1:length(SNR_dB)
        % Y_data_llr=qamdemod(Y_est_data',M_mod,'OutputType','approxllr','NoiseVariance',noise_var_eq,'UnitAveragePower',true);
 
        % Y_data_deinter= matdeintrlv(Y_data_1,length(Y_data_1)/20,20);
-       y_data_deinter=rx_deinterleave(Y_data_1,20);
+       y_data_deinter=rx_deinterleaver(Y_data_1,128);
 
         % Y_llr_deinter= matdeintrlv(Y_data_llr,length(Y_data_llr)/40,40);
 
