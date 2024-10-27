@@ -20,7 +20,7 @@ total_decode=zeros(5,7);
 for fd=0
 %% Parameters setting
 
-Nfft=2048;
+Nfft=1024;
 Ng=Nfft/4;
 % Ng=201;    % CP length
 % Nvc=400;
@@ -29,21 +29,21 @@ Nframe=5;
 
 M_mod=16;  % Modulation order
 
-channeltype=0; % 1 滑行 2 停泊 3 起飞/降落 4 巡航
+channeltype=3; % 1 滑行 2 停泊 3 起飞/降落 4 巡航
 % fd=1000; % Doppler shift
 fmin=100;  % enroute min Doppler
 fmax=500; % enroute max Doppler
 
 R_code=1/2; % channel code rate
 
-EbN0=[0:2:14];
+EbN0=[0:5:30];
 
 % SNR_dB=[0:5:30]
 ExtraNoise=0; % Extra noise sample
 EndNoise=0;  % End noise sample
 CFO=2.5;
 
-max_iter=1e3; % number of iter
+max_iter=10; % number of iter
 
 Nps=2; % the space of pilot symbol
 
@@ -97,7 +97,7 @@ for i=1:length(SNR_dB)
 
         raw_data=randi([0,1],rawbit_perframe,1);
 
-        trellis = poly2trellis(7,[171 133]);
+        % trellis = poly2trellis(7,[171 133]);
 
         % code_data=convenc(raw_data,trellis);
 
@@ -116,7 +116,7 @@ for i=1:length(SNR_dB)
 
         %% Channel
 
-        % [y,h]=channel_project(x_tr,channeltype,fd,fmin,fmax);
+        [y,h]=channel_project(x_tr,channeltype,fd,fmin,fmax);
 
 %         PowerdB=[0 -8 -17 ];
 %         Delay=[0 3 5];
@@ -136,7 +136,7 @@ for i=1:length(SNR_dB)
 
         channel_length=201;
 
-        [y_re,noise_var]=add_noise(x_tr,SNR_dB(i),ExtraNoise,EndNoise);
+        [y_re,noise_var]=add_noise(y,SNR_dB(i),ExtraNoise,EndNoise);
 %         y_re=x_tr; % 不加噪声
 %         noise_var=1;
         % noise_var=0;
@@ -167,7 +167,7 @@ for i=1:length(SNR_dB)
 
         % total_undecode(fd/1000+1,i)=total_undecode(fd/1000+1,i)+sum(Y_data_1~=inter_data);
 
-        Y_data_llr=qamdemod(Y_est_data.',M_mod,'OutputType','llr','NoiseVariance',noise_var,'UnitAveragePower',true);
+        Y_data_llr=qamdemod(Y_est_data.',M_mod,'OutputType','approxllr','NoiseVariance',1,'UnitAveragePower',true);
 
         y_llr_deinter=rx_deinterleaver(Y_data_llr,128);
 
@@ -185,7 +185,7 @@ for i=1:length(SNR_dB)
 
         % total_biterrors_soft(i)=total_biterrors_soft(i)+sum(decode_data_soft~=raw_data);
         
-        BER_ofdm(i)=total_biterrors(i)/(iter*(length(raw_data)));
+        % BER_ofdm(i)=total_biterrors(i)/(iter*(length(raw_data)));
 
         % BER_ofdm_soft(i)=total_biterrors_soft(i)/(iter*(length(raw_data)));
 
@@ -197,7 +197,10 @@ end
 %totalerrors_idk(fd/1000+1,:)=total_biterrors;
 %BER_idk(fd/1000+1,:)=BER_ofdm;
 
+BER_ofdm = total_biterrors./(max_iter*length(raw_data));
+
 end
+
 
 figure;
 
@@ -209,8 +212,8 @@ legend('Est','Real')
 
 figure;
 semilogy(EbN0,BER_ofdm);
-hold on;
-Awgntheory = awgn_theory(EbN0,M_mod);
-semilogy(EbN0,Awgntheory);
-legend('Current','Theory');
+% hold on;
+% Awgntheory = awgn_theory(EbN0,M_mod);
+% semilogy(EbN0,Awgntheory);
+% legend('Current','Theory');
 

@@ -1,39 +1,4 @@
 function [cfgLDPCEnc,decodercfg] = generateConfigLDPC(rate,varargin)
-% This is a helper function which generates LDPC config struct variables in 
-% the format supported by ldpcEncode() and ldpcDecode() functions of
-% MATLAB (supported from 2021b)
-
-% Author: Zakir Hussain Shaik
-
-% This function version 1.0
-
-% This function accepts minimum one and maximum four inputs where three inputs are
-% optional.
-% First input  : rate -- code rate (Mandtory Input)
-% Second input : codewordLen -- codeword length (If given must be second input)
-% Third input  : standard-- 'wlan' (this input is name-value type)
-% Fourth input : decoderAlgo -- decoding algorithm (this input is name-value type)
-
-% Second, third and fourth inputs are optional. However, if codeword length
-% is provided as input it should be in the second argument only.
-% Third and fourth arguments are of name-value format and can be given in
-% any order
-
-% Default: standard is 'wlan', codewordLen is 648, decoderAlgo is 'bp'
-
-% Current version supports: IEEE Std 802.11-2020 standard (WLAN)
-% Future versions to incorporate : other standards
-
-% "IEEE Standard for Information Technology--Telecommunications and ...
-% Information Exchange between Systems - Local and Metropolitan Area...
-% Networks--Specific Requirements - Part 11: Wireless LAN...
-% Medium Access Control (MAC) and Physical Layer (PHY) Specifications,"...
-% in IEEE Std 802.11-2020 (Revision of IEEE Std 802.11-2016) ,...
-% vol., no., pp.1-4379, 26 Feb. 2021, doi: 10.1109/IEEESTD.2021.9363693.
-
-% https://ieeexplore.ieee.org/document/9363693
-
-% License: This code is licensed under the GPLv2 license.
 
 %% Checking input arguments and default inputs
 defaultCodewordLen = 648;

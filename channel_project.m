@@ -43,7 +43,7 @@ channel_taxi=comm.RicianChannel('SampleRate',fs,'PathDelays',delay_tap*Ts,'Avera
 
 inf_taxi=info(channel_taxi);
 
-y=channel_taxi(x')';
+y=channel_taxi(x.').';
 h=1;
 
 
@@ -59,7 +59,7 @@ channel_park=comm.RayleighChannel('SampleRate',fs,'PathDelays',delay_tap*Ts,'Ave
 
 inf_park=info(channel_park);
 
-y=channel_park(x')';
+y=channel_park(x.').';
 h=1;
 
 
@@ -78,9 +78,9 @@ s_takeoff=doppler('Asymmetric Jakes',[0,1]); % 半边Jakes谱
 channel_takeoff=comm.RicianChannel('SampleRate',fs,'PathDelays',delay_tap*Ts,'AveragePathGains',delay_actual_dB, ...
     'DopplerSpectrum',s_takeoff,'MaximumDopplerShift',fd,'DirectPathDopplerShift',fd,'KFactor',K_takeoff_linear);
 
-inf_takeoff=info(channel_takeoff);
+% inf_takeoff=info(channel_takeoff);
 
-y=channel_takeoff(x')';
+y=channel_takeoff(x.').';
 h=1;
 
 elseif channeltype==4
@@ -100,7 +100,7 @@ channel_enroute=comm.RicianChannel('SampleRate',fs,'PathDelays',delay_enroute,'A
 
 inf_enroute=info(channel_enroute);
 
-y=channel_enroute(x')';
+y=channel_enroute(x.').';
 h=1;
 
 end

@@ -7,14 +7,14 @@ k_bits = cfgLDPCEnc.NumInformationBits;
 
 maxnumiter = 50; % Number of iterations for LDPC decoder
 
-raw_data=randi([0 1],20480,1);
+raw_data=randi([0 1],10240,1);
 
 [code_data,last_len]=LDPC_code(raw_data);
 
 M=4;
 modSignal = qammod(code_data,M,'InputType','bit','UnitAveragePower',true);
 
-snrdB = 0; % SNR in dB
+snrdB = 10; % SNR in dB
 
 receivedSignal = awgn(modSignal,snrdB);
 
