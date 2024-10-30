@@ -17,17 +17,18 @@ totalerrors_idk=zeros(5,7);
 total_undecode=zeros(5,7);
 total_decode=zeros(5,7);
 
-for fd=1000
+for fd=0:1000:4000
 %% Parameters setting
 
-Nfft=2048;
+Nfft=1024;
 Ng=Nfft/4;
 % Ng=201;    % CP length
 % Nvc=400;
 Nvc=0;        % Vitural carrier
-Nframe=5;
+Nframe=10;
+sub_deltaf=15*1e3; %子载波间隔
 
-M_mod=2;  % Modulation order
+M_mod=16;  % Modulation order
 
 channeltype=3; % 1 滑行 2 停泊 3 起飞/降落 4 巡航
 % fd=1000; % Doppler shift
@@ -36,7 +37,7 @@ fmax=500; % enroute max Doppler
 
 R_code=1/2; % channel code rate
 
-EbN0=[20:5:30];
+EbN0=[0:5:30];
 
 % SNR_dB=[0:5:30]
 ExtraNoise=0; % Extra noise sample
@@ -102,7 +103,7 @@ for i=1:length(SNR_dB)
         code_data=convenc(raw_data,trellis);
 
         % inter_data=matintrlv(code_data,length(code_data)/20,20);
-        inter_data=tx_interleaver(code_data,20);
+        inter_data=tx_interleaver(code_data,256);
 
         X_data_1=qammod(inter_data,M_mod,'InputType','bit','UnitAveragePower',true);
 
@@ -165,7 +166,7 @@ for i=1:length(SNR_dB)
        % Y_data_llr=qamdemod(Y_est_data',M_mod,'OutputType','approxllr','NoiseVariance',noise_var_eq,'UnitAveragePower',true);
 
        % Y_data_deinter= matdeintrlv(Y_data_1,length(Y_data_1)/20,20);
-       y_data_deinter=rx_deinterleave(Y_data_1,20);
+       y_data_deinter=rx_deinterleave(Y_data_1,256);
 
         % Y_llr_deinter= matdeintrlv(Y_data_llr,length(Y_data_llr)/40,40);
 
@@ -210,6 +211,5 @@ legend('Est','Real')
 
 figure;
 semilogy(EbN0,BER_ofdm);
-hold on;
-semilogy(EbN0,BER_ofdm_soft);
-legend('Hard','Soft');
+
+

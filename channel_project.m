@@ -11,6 +11,7 @@ function [y,h]=channel_project(x,channeltype,fd,fmin,fmax)
 % clear channel;
 
 fs=20e6; % 采样频率
+% fs=1024*20*1e3;
 Ts=1/fs;
 % fd=4000;
 

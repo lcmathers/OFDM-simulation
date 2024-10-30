@@ -5,7 +5,8 @@
 %% 而且这个问题是发生在 （QPSK，BPSk）并且交织比较分散的情况下（交织列数比较多）
 
 %% 可能是有信道估计的插值问题 （有虚拟子载波的情况下）
-
+%% 在vc置0的情况下，也会出现这个问题
+%% 交织的深度（列数）不够时，性能也是变差的
 
 
 
@@ -19,14 +20,15 @@ total_decode=zeros(5,7);
 for fd=0:1000:4000
 %% Parameters setting
 
-Nfft=2048;
+Nfft=1024;
 Ng=Nfft/4;
 % Ng=201;    % CP length
 % Nvc=400;
 Nvc=0;        % Vitural carrier
 Nframe=5;
+sub_deltaf=15*1e3; %子载波间隔
 
-M_mod=2;  % Modulation order
+M_mod=4;  % Modulation order
 
 channeltype=3; % 1 滑行 2 停泊 3 起飞/降落 4 巡航
 % fd=1000; % Doppler shift
@@ -42,7 +44,7 @@ ExtraNoise=0; % Extra noise sample
 EndNoise=0;  % End noise sample
 CFO=2.5;
 
-max_iter=10; % number of iter
+max_iter=1e3; % number of iter
 
 Nps=2; % the space of pilot symbol
 
@@ -88,6 +90,7 @@ STO=zeros(length(SNR_dB),max_iter);
 
 %% Main Loop
 
+
 for i=1:length(SNR_dB)
     for iter=1:max_iter
 
@@ -99,13 +102,14 @@ for i=1:length(SNR_dB)
 
         code_data=convenc(raw_data,trellis);
 
-        inter_data=matintrlv(code_data,length(code_data)/20,20);
+        % inter_data=matintrlv(code_data,length(code_data)/20,20);
+        inter_data=tx_interleaver(code_data,80);
 
         X_data_1=qammod(inter_data,M_mod,'InputType','bit','UnitAveragePower',true);
 
         X_data=X_data_1.';
            
-        x_tr=frame_generate(X_data,Nfft,Nsym,Ndata,Nvc,Nframe,Train_sym,X_pilot,Nps);
+        x_tr=frame_generate(X_data,Nfft,Nsym,Ndata,Nvc,Nframe,X_pilot,Nps);
 
 
 
@@ -131,9 +135,9 @@ for i=1:length(SNR_dB)
 
         channel_length=201;
 
-        % [y_re,noise_var]=add_noise(y,SNR_dB(i),ExtraNoise,EndNoise);
-        y_re=y;
-        noise_var=0;
+        [y_re,noise_var]=add_noise(y,SNR_dB(i),ExtraNoise,EndNoise);
+        % y_re=y;
+        % noise_var=0;
         
 
         %y_re=y;
@@ -161,14 +165,15 @@ for i=1:length(SNR_dB)
 
        % Y_data_llr=qamdemod(Y_est_data',M_mod,'OutputType','approxllr','NoiseVariance',noise_var_eq,'UnitAveragePower',true);
 
-        Y_data_deinter= matdeintrlv(Y_data_1,length(Y_data_1)/20,20);
+       % Y_data_deinter= matdeintrlv(Y_data_1,length(Y_data_1)/20,20);
+       y_data_deinter=rx_deinterleave(Y_data_1,80);
 
         % Y_llr_deinter= matdeintrlv(Y_data_llr,length(Y_data_llr)/40,40);
 
         % Y_llr_deinter=double(Y_llr_deinter);
 
         tblen=32;
-        decode_data = vitdec(Y_data_deinter,trellis,tblen,'trunc','hard');
+        decode_data = vitdec(y_data_deinter,trellis,tblen,'trunc','hard');
 
         % decode_data_soft = vitdec(Y_llr_deinter,trellis,tblen,'cont','unquant');
 
@@ -206,6 +211,5 @@ legend('Est','Real')
 
 figure;
 semilogy(EbN0,BER_ofdm);
-hold on;
-semilogy(EbN0,BER_ofdm_soft);
-legend('Hard','Soft');
+
+
