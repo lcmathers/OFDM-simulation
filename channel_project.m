@@ -79,7 +79,7 @@ s_takeoff=doppler('Asymmetric Jakes',[0,1]); % 半边Jakes谱
 channel_takeoff=comm.RicianChannel('SampleRate',fs,'PathDelays',delay_tap*Ts,'AveragePathGains',delay_actual_dB, ...
     'DopplerSpectrum',s_takeoff,'MaximumDopplerShift',fd,'DirectPathDopplerShift',fd,'KFactor',K_takeoff_linear);
 
-inf_takeoff=info(channel_takeoff);
+inf_takeoff = info(channel_takeoff);
 
 y=channel_takeoff(x')';
 h=1;

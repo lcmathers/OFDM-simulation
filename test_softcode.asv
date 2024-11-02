@@ -1,13 +1,3 @@
-%% 交织解码的过程使得fd增加性能反而变好
-%% 交织的两步使得fd增加性能反而变好
-%% 在另一个场景的信道下，fd的增加会导致性能变差 ()
-%% 多普勒设置的问题，设置为半边Jakes谱，会有上述问题
-%% 而且这个问题是发生在 （QPSK，BPSk）并且交织比较分散的情况下（交织列数比较多）
-
-%% 可能是有信道估计的插值问题 （有虚拟子载波的情况下）
-%% 在vc置0的情况下，也会出现这个问题
-%% 交织的深度（列数）不够时，性能也是变差的
-
 
 
 clc;clear all; close all;
@@ -17,7 +7,7 @@ totalerrors_idk=zeros(5,7);
 total_undecode=zeros(5,7);
 total_decode=zeros(5,7);
 
-for fd=0
+for fd=2000
 %% Parameters setting
 
 Nfft=1024;
@@ -37,7 +27,7 @@ fmax=500; % enroute max Doppler
 
 R_code=1/2; % channel code rate
 
-EbN0=[0:2:10];
+EbN0=[0:5:30];
 
 % SNR_dB=[0:5:30]
 ExtraNoise=0; % Extra noise sample
@@ -159,19 +149,21 @@ for i=1:length(SNR_dB)
 
         H_frame = reshape(H_frame.',1,[]);
 
-        H_frame_signal = H_frame(2:2:end);
+        H_frame_signal = H_frame(2:2:end); 
 
-        noise_var_eq = noise_var./abs(H_frame_signal).^2;  % 计算每一个符号的噪声功率
+        noise_var_eq = noise_var./abs(H_frame_signal).^2;
 
         H_DFT_dB=10*log10(abs(H_DFT.*conj(H_DFT)));
 
         Y_data_1=qamdemod(Y_est_data.',M_mod,'OutputType','bit','UnitAveragePower',true);
 
-        total_undecode(fd/1000+1,i)=total_undecode(fd/1000+1,i)+sum(Y_data_1~=inter_data);
+        total_undecode(fd/1000+1,i)=total_undecode(fd/1000+1,i)+sum(Y_data_1~=inter_data)
 
         Y_data_llr=qamdemod(Y_est_data,M_mod,'OutputType','approxllr','NoiseVariance',noise_var_eq,'UnitAveragePower',true);  % 每一个符号的噪声功率是不一样的！！！
+        
+        Y_data_llr_1=reshape(Y_data_llr,[],1);
 
-        Y_llr_deinter= rx_deinterleave(Y_data_llr,256);
+        Y_llr_deinter= rx_deinterleave(Y_data_llr_1,256);
         y_data_deinter=rx_deinterleave(Y_data_1,256);
 
         % Y_llr_deinter= matdeintrlv(Y_data_llr,length(Y_data_llr)/40,40);
@@ -193,9 +185,9 @@ for i=1:length(SNR_dB)
 
         total_biterrors_soft(i)=total_biterrors_soft(i)+sum(decode_data_soft~=raw_data);
         
-        BER_ofdm(i)=total_biterrors(i)/(iter*(length(raw_data)-tblen));
+        BER_ofdm(i)=total_biterrors(i)/(iter*(length(raw_data)));
 
-        BER_ofdm_soft(i)=total_biterrors_soft(i)/(iter*(length(raw_data)-tblen));
+        BER_ofdm_soft(i)=total_biterrors_soft(i)/(iter*(length(raw_data)));
 
 
 
@@ -220,5 +212,3 @@ semilogy(EbN0,BER_ofdm);
 hold on;
 semilogy(EbN0,BER_ofdm_soft);
 legend('hard','soft')
-
-

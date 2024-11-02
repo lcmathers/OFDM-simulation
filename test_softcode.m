@@ -1,18 +1,28 @@
-clc;clear all; close all;
-rng default;
 
+
+clc;clear all; close all;
+
+BER_idk=zeros(5,7);
+totalerrors_idk=zeros(5,7);
+total_undecode=zeros(5,7);
+total_decode=zeros(5,7);
+total_decode_soft=zeros(5,7);
+
+for fd=0
 %% Parameters setting
 
-Nfft=2048;      
-Ng=Nfft/4;    % CP length
-% Ng=3;
-Nvc=400;        % Vitural carrier
-Nframe=5;
+Nfft=1024;
+Ng=Nfft/4;
+% Ng=201;    % CP length
+% Nvc=400;
+Nvc=0;        % Vitural carrier
+Nframe=10;
+sub_deltaf=15*1e3; %子载波间隔
 
 M_mod=16;  % Modulation order
 
 channeltype=3; % 1 滑行 2 停泊 3 起飞/降落 4 巡航
-fd=0; % Doppler shift
+% fd=1000; % Doppler shift
 fmin=100;  % enroute min Doppler
 fmax=500; % enroute max Doppler
 
@@ -20,12 +30,10 @@ R_code=1/2; % channel code rate
 
 EbN0=[0:5:30];
 
-% SNR_dB=[0:5:30];
+% SNR_dB=[0:5:30]
 ExtraNoise=0; % Extra noise sample
 EndNoise=0;  % End noise sample
-CFO=0;
-
-trellis = poly2trellis(7,[171 133]);
+CFO=2.5;
 
 max_iter=10; % number of iter
 
@@ -38,10 +46,10 @@ Train_sym=[STS LTS];
 %Train_sym=[];
 
 total_biterrors=zeros(1,length(EbN0));
-total_biterrors_hard=zeros(1,length(EbN0));
-
 BER_ofdm=zeros(1,length(EbN0));
-BER_ofdm_hard=zeros(1,length(EbN0));
+
+total_biterrors_soft=zeros(1,length(EbN0));
+BER_ofdm_soft=zeros(1,length(EbN0));
 
 
 
@@ -52,6 +60,8 @@ Ndata=Nfft-Nvc;
 
 [X_pilot,pilot_loc]=generate_pilot(Nfft,Nps,Nvc,Ndata);
 
+
+%%
 M_bit=log2(M_mod);
 R1=(Nfft/Nps)/(Nfft); % the ratio of pilot symbol and Nfft
 
@@ -69,126 +79,139 @@ CFO_est=zeros(length(SNR_dB),max_iter);
 FFO_est=zeros(length(SNR_dB),max_iter);
 STO=zeros(length(SNR_dB),max_iter);
 
-
 %% Main Loop
 
+
 for i=1:length(SNR_dB)
-    
     for iter=1:max_iter
+
         %% Tx
 
         raw_data=randi([0,1],rawbit_perframe,1);
 
+        trellis = poly2trellis(7,[171 133]);
+
         code_data=convenc(raw_data,trellis);
 
-        % inter_data=tx_interleaver(code_data,Ndata/2,M_bit,Nframe); % interleaver
-        inter_data=matintrlv(code_data,length(code_data)/32,32);
+        % inter_data=matintrlv(code_data,length(code_data)/20,20);
+        inter_data=tx_interleaver(code_data,256);
 
-        X_data_1=qammod(inter_data,M_mod,'gray','InputType','bit','UnitAveragePower',true);
+        X_data_1=qammod(inter_data,M_mod,'InputType','bit','UnitAveragePower',true);
 
-        X_data=X_data_1';
+        X_data=X_data_1.';
+           
+        x_tr=frame_generate(X_data,Nfft,Nsym,Ndata,Nvc,Nframe,X_pilot,Nps);
 
-        x_tr=frame_generate(X_data,Nfft,Nsym,Ndata,Nvc,Nframe,Train_sym,X_pilot,Nps);  % generate a frame
 
-        
-
-        % x_tr= [Train_sym x_tr];
 
         %% Channel
 
         [y,h]=channel_project(x_tr,channeltype,fd,fmin,fmax);
-        
-%         delay_tap=[0 2 6 10];
+
+%         PowerdB=[0 -8 -17 ];
+%         Delay=[0 3 5];
 % 
-%         channel_coeff=sqrt(1/2)*(randn(1,length(delay_tap))+1j*randn(1,length(delay_tap)));
-%         h1=zeros(1,delay_tap(end)+1);
-%         h1(delay_tap+1)=channel_coeff;
+%         Power=10.^(PowerdB/10);
+%         Ntap=length(Delay);
 % 
-%         y=conv(x_tr,h1);
-%         h=1;
+%         channel=sqrt(Power/2).*(randn(1,Ntap)+1j*randn(1,Ntap));
+%         h=zeros(1,Ntap+1);
+%         h(Delay+1)=channel;
 % 
-%         y_CFO=add_CFO(y,CFO,Nfft);
+%         H=fft(h,2048);
+%         H_power_dB=10*log10(abs(H.*conj(H)));
+% 
+%         y=conv(x_tr,h);
+
+
+        channel_length=201;
 
         [y_re,noise_var]=add_noise(y,SNR_dB(i),ExtraNoise,EndNoise);
+        % y_re=y;
+        % noise_var=0;
         
+
+        %y_re=y;
 
 
         %% Rx
-
-
+       
         delay_result(i,iter)=ExtraNoise;
         % delay_result=ExtraNoise;
         y_data=y_re(delay_result(i,iter)+1:end);
 
+        
+        % decompose the frame
 
-        % 
+        % h=1;
+        [Y_est_data,H_DFT,H_frame]=frame_decompose(y_data,Nfft,Nsym,Ndata,Nvc,Nframe,channeltype,X_pilot,Nps,pilot_loc,noise_var);
 
-        h=1;
-        % Y_est_data=frame_decompose(y_data,Nfft,Nsym,Ndata,Nvc,Nframe,channeltype,X_pilot,Nps,pilot_loc);
+        % noise_var_eq=mean(noise_mean);
 
-        [Y_est_data,H_DFT,noise_mean]=frame_decompose(y_data,Nfft,Nsym,Ndata,Nvc,Nframe,channeltype,X_pilot,Nps,pilot_loc,noise_var);
+        H_frame = reshape(H_frame.',1,[]);
 
-        X_est_data=qamdemod(Y_est_data',M_mod,'gray','OutputType','bit','UnitAveragePower',true);
+        H_frame_signal = H_frame(2:2:end); 
 
-        % X_est_deinter=matdeintrlv(X_est_data,length(X_est_data)/32,32);
+        noise_var_eq = noise_var./abs(H_frame_signal).^2;
 
-        noise_var_1=10.^(-SNR_dB(i)/10)*mean(Y_est_data.*conj(Y_est_data));
+        H_DFT_dB=10*log10(abs(H_DFT.*conj(H_DFT)));
 
-        % noise_var=10.^(-SNR_dB(i)/10);
+        Y_data_1=qamdemod(Y_est_data.',M_mod,'OutputType','bit','UnitAveragePower',true);
 
-        X_est_data_llr=qamdemod(Y_est_data',M_mod,'OutputType','approxllr','UnitAveragePower',true);
+        total_undecode(fd/1000+1,i)=total_undecode(fd/1000+1,i)+sum(Y_data_1~=inter_data);
 
-        X_est_data_llr_deinter=matdeintrlv(X_est_data_llr,length(X_est_data_llr)/32,32);
+        Y_data_llr=qamdemod(Y_est_data,M_mod,'OutputType','approxllr','NoiseVariance',noise_var_eq,'UnitAveragePower',true);  % 每一个符号的噪声功率是不一样的！！！
+        
+        Y_data_llr_1=reshape(Y_data_llr,[],1);
 
-        % X_est_decode_soft_1=channel_decode_soft(X_est_data_llr,noise_var,trellis);
-        X_est_decode_soft_1=vitdec(X_est_data_llr_deinter,trellis,32,'cont','unquant');
-       
+        Y_llr_deinter= rx_deinterleave(Y_data_llr_1,256);
+        y_data_deinter=rx_deinterleave(Y_data_1,256);
 
- 
-        % X_est_reshape=reshape(X_est_data,bits_perframe,1);
+        % Y_llr_deinter= matdeintrlv(Y_data_llr,length(Y_data_llr)/40,40);
 
-        %X_est_deinter=rx_deinterleave(X_est_reshape,Ndata/2,M_bit,Nframe); % deinterleaver
-        % X_est_deinter=matdeintrlv(X_est_data,length(X_est_data)/32,32);
-        % X_est_deinter=X_est_reshape;
+        % Y_llr_deinter=double(Y_llr_deinter);
 
-        % X_est_decode=channel_decode(X_est_data); % channel decode (2,1,7)
+        tblen=32;
+        decode_data = vitdec(y_data_deinter,trellis,tblen,'trunc','hard');
 
-        X_est_decode_1=vitdec(X_est_data,trellis,32,'cont','hard');
+        decode_data_soft = vitdec(Y_llr_deinter,poly2trellis(7,[171 133]),tblen,'trunc','unquant');
 
-      
 
-        % X_est_decode=matdeintrlv(X_est_decode_1,length(X_est_decode_1)/32,32);
+        % total_biterrors(i)=total_biterrors(i)+sum(decode_data(tblen+1:end)~=raw_data(1:end-tblen));
+        total_biterrors(i)=total_biterrors(i)+sum(decode_data~=raw_data);
 
-        % BER calculation
-        total_biterrors(i)=total_biterrors(i)+sum(sum(X_est_decode_soft_1(33:end)~=raw_data(1:end-32)));
-        % total_biterrors(i)=total_biterrors(i)+sum(sum(X_est_decode_soft_1~=raw_data));
-        total_biterrors_hard(i)=total_biterrors_hard(i)+sum(sum(X_est_decode_1(33:end)~=raw_data(1:end-32)));
-        % total_biterrors_hard(i)=total_biterrors_hard(i)+sum(sum(X_est_decode_1~=raw_data));
+        total_decode(fd/1000+1,i)=total_biterrors(i);
 
-%         BER_ofdm(i)=total_biterrors(i)./(iter*rawbit_perframe);
-%         BER_ofdm_hard(i)=total_biterrors_hard(i)./(iter*rawbit_perframe);
+       % total_biterrors_soft(i)=total_biterrors_soft(i)+sum(decode_data_soft(tblen+1:end)~=raw_data(1:end-tblen));
+
+        total_biterrors_soft(i)=total_biterrors_soft(i)+sum(decode_data_soft~=raw_data);
+
+        total_decode_soft(fd/1000+1,i)=total_biterrors_soft(i);
+        
+        BER_ofdm(i)=total_biterrors(i)/(iter*(length(raw_data)));
+
+        BER_ofdm_soft(i)=total_biterrors_soft(i)/(iter*(length(raw_data)));
+
 
 
     end
+end
+
+%totalerrors_idk(fd/1000+1,:)=total_biterrors;
+%BER_idk(fd/1000+1,:)=BER_ofdm;
 
 end
 
-%% plot the SNR-BER curve
+figure;
 
-BER_ofdm=total_biterrors./(max_iter*rawbit_perframe);
-BER_ofdm_hard=total_biterrors_hard./(max_iter*rawbit_perframe);
-%BER_ofdm_undecode=total_biterrors_undecode./(max_iter*bits_perframe);
+plot(H_DFT_dB);
+hold on;
+%plot(H_power_dB);
+legend('Est','Real')
 
-% EbN0=SNR_dB-10*log10(M_bit);
 
-% BER_ofdm(5)=398/(1e4*rawbit_perframe);
-% BER_ofdm(6)=98/(1e4*rawbit_perframe);
-% BER_ofdm(7)=37/(1e4*rawbit_perframe);
-% SNR_dB=[0:5:30];max_iter*rawbit_perframe
-
-figure(2);
+figure;
 semilogy(EbN0,BER_ofdm);
 hold on;
-semilogy(EbN0,BER_ofdm_hard);
-xlabel('EbN0'),ylabel('BER')
-legend('Soft','Hard');
+semilogy(EbN0,BER_ofdm_soft);
+legend('hard','soft')

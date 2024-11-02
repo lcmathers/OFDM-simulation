@@ -8,11 +8,11 @@ sig_pow = mean(y_channel.*conj(y_channel)); %计算经过衰落信道后的信�
 
 noise_var=10.^(-SNR_dB/10)*sig_pow;
 
-y_awgn = y_channel + sqrt((10.^(-SNR_dB/10))*sig_pow/2)*(randn(1,length(y_channel))+1j*randn(1,length(y_channel))); % Add noise(AWGN)
+y_awgn = y_channel + sqrt(noise_var/2)*(randn(1,length(y_channel))+1j*randn(1,length(y_channel))); % Add noise(AWGN)
 
-extra_noise = sqrt((10.^(-SNR_dB/10))*sig_pow/2) * (randn(1,ExtraNoiseSamples) + 1i*randn(1, ExtraNoiseSamples));   % Extranoise
+extra_noise = sqrt(noise_var/2) * (randn(1,ExtraNoiseSamples) + 1i*randn(1, ExtraNoiseSamples));   % Extranoise
 
-end_noise = sqrt((10.^(-SNR_dB/10))*sig_pow/2) * (randn(1,EndNoiseSamples) + 1i*randn(1, EndNoiseSamples)); % Endnoise
+end_noise = sqrt(noise_var/2) * (randn(1,EndNoiseSamples) + 1i*randn(1, EndNoiseSamples)); % Endnoise
 
 yt=[extra_noise y_awgn end_noise];
 

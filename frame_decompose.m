@@ -1,10 +1,13 @@
-function [X_data,H_DFT,noise_eq] = frame_decompose(y_data,Nfft,Nsym,Ndata,Nvc,Nframe,channeltype,X_pilot,Nps,pilot_loc,noise_var)
+function [X_data,H_DFT,H_frame] = frame_decompose(y_data,Nfft,Nsym,Ndata,Nvc,Nframe,channeltype,X_pilot,Nps,pilot_loc,noise_var)
 
 %% y_data  / rsceving data after syn
 
 Ng=Nsym-Nfft; % CP length
 
+
 if Nvc==0
+
+    H_frame=zeros(Nframe,Nfft);
 
     noise_eq=1;
 
@@ -25,22 +28,26 @@ if Nvc==0
         y_handle=y_data(kk1);
         y_outcp=outcp(y_handle,Nfft,Ng); % Remove CP
 
-        Y(kk2)=fft(y_outcp,Nfft);
+        Y(kk2)=fft(y_outcp,Nfft)/sqrt(Nfft);
 
         Y_shift=[Y(kk4),Y(kk5)];
 
 
         if channeltype==0
             Xmod_r=Y_shift;
+            H_DFT=1;
 
         elseif (channeltype==1)||(channeltype==2)||(channeltype==3)||(channeltype==4)
             % Xmod_r=Y_shift./H_shift;
+
             %% LS/DFT channel estimation
 
             H_est=LS_test(Y_shift,pilot_loc,X_pilot,Nfft,Nvc);
 
             channel_length=201;
             H_DFT=LS_DFT(H_est,channel_length);
+
+            H_frame(k,:)=H_DFT;
 
 
             % Xmod_r=Y_shift./H_DFT([[(Nvc~=0)+[1:Ndata/2]],[Ndata/2+Nvc+1:Nfft]]);
@@ -50,13 +57,13 @@ if Nvc==0
             % Xmod_r=Y_shift./H_shift;
         end
 % 
-%         figure(1);
-%         subplot(2,1,1)
-%         plot(Y_shift,'.','MarkerSize',5);
-%         axis([-1.5 1.5 -1.5 1.5]);
-%         subplot(2,1,2)
-%         plot(Xmod_r,'.','MarkerSize',5);
-%         axis([-1.5 1.5 -1.5 1.5]);
+        % figure(1);
+        % subplot(2,1,1)
+        % plot(Y_shift,'.','MarkerSize',5);
+        % axis([-1.5 1.5 -1.5 1.5]);
+        % subplot(2,1,2)
+        % plot(Xmod_r,'.','MarkerSize',5);
+        % axis([-1.5 1.5 -1.5 1.5]);
 
 
 

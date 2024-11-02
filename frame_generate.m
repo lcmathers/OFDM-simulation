@@ -30,10 +30,11 @@ for k=1:Nframe
         X_shift=[X_total(kk2) X_total(kk1)];
     end
 
-    x=ifft(X_shift,Nfft);
+    x=ifft(X_shift,Nfft)*sqrt(Nfft);
     x_cp=add_CP(x,Nfft,Ng);
-    x_tr=[x_tr x_cp];
 
+    x_tr=[x_tr x_cp];
+    
     kk1= kk1+Ndata;
     kk2= kk2+Ndata;
     kk3= kk3+Nfft;
