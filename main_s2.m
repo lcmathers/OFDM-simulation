@@ -44,7 +44,7 @@ ExtraNoise=0; % Extra noise sample
 EndNoise=0;  % End noise sample
 CFO=2.5;
 
-max_iter=1e2; % number of iter
+max_iter=1; % number of iter
 
 Nps=2; % the space of pilot symbol
 

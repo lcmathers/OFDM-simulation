@@ -1,4 +1,4 @@
-function [X_data,H_DFT,H_frame] = frame_decompose(y_data,Nfft,Nsym,Ndata,Nvc,Nframe,channeltype,X_pilot,Nps,pilot_loc,noise_var)
+function [X_data,H_DFT,H_frame] = frame_decompose(y_data,Nfft,Nsym,Ndata,Nvc,Nframe,channeltype,X_pilot,Nps)
 
 %% y_data  / rsceving data after syn
 
@@ -84,6 +84,8 @@ elseif Nvc>0
 
     X_mod=[];
 
+    H_frame = zeros(Nframe/2,Nfft);
+
  
     kk1=1:Nsym
     kk2=1:Nfft;
@@ -91,12 +93,10 @@ elseif Nvc>0
     kk4= Ndata/2+Nvc+1:Nfft;
     kk5= (Nvc~=0)+[1:Ndata/2];
 
-    noise_eq=zeros(1,Nframe);
-
     for k=1:Nframe
 
 
-        y_handle = y_data(kk1);
+        y_handle = y_data((k-1)*Nsym+1:k*Nsym);
         y_outcp = outcp(y_handle,Nfft,Ng); % Remove CP
 
         Y = fft(y_outcp,Nfft)/sqrt(Nfft);
@@ -105,32 +105,45 @@ elseif Nvc>0
 
         if (mod(k,2)==1)
 
-        channel_length=201;
+            channel_length=201;
 
-        [Xmod_r,H_LS_vc,H_DFT,noise_eq(k)]=LS_vc(Y,X_pilot,Nfft,Nvc,channel_length,noise_var);
-
-
-
-        figure(1);
-        subplot(2,1,1)
-        plot(Y,'.','MarkerSize',5);
-        axis([-1.5 1.5 -1.5 1.5]);
-        subplot(2,1,2)
-        plot(Xmod_r,'.','MarkerSize',5);
-        axis([-1.5 1.5 -1.5 1.5]);
+            [H_final,H_DFT]=LS_vc(Y,X_pilot,Nfft,Nvc,channel_length);
 
 
-        H_DFT_dB=10*log10(abs(H_DFT.*conj(H_DFT)));
+        elseif (mod(k,2)==0)
+
+            H_frame(k/2,:) = H_DFT;
+
+            % 用前一帧的信道估计做均衡
+
+            H_shift(kk3) = [H_DFT(kk4) H_DFT(kk5)];
+
+            Y_shift = [Y(kk4) Y(kk5)];
+
+            Xmod_r = Y_shift./H_shift(kk3);
+
+
+
+            figure(1);
+            subplot(2,1,1)
+            plot(Y,'.','MarkerSize',5);
+            axis([-1.5 1.5 -1.5 1.5]);
+            subplot(2,1,2)
+            plot(Xmod_r,'.','MarkerSize',5);
+            axis([-1.5 1.5 -1.5 1.5]);
+
+
+            %H_DFT_dB=10*log10(abs(H_DFT.*conj(H_DFT)));
         
+            X_mod=[X_mod Xmod_r]
+            % 
+            % kk1=kk1+Nsym;
+            % kk2=kk2+Nfft;
+            % kk3=kk3+Ndata;
+            % kk4=kk4+Nfft;
+            % kk5=kk5+Nfft;
 
-
-        X_mod=[X_mod Xmod_r]
-
-        kk1=kk1+Nsym;
-        kk2=kk2+Nfft;
-        kk3=kk3+Ndata;
-        kk4=kk4+Nfft;
-        kk5=kk5+Nfft;
+        end
 
 
     end

@@ -85,12 +85,16 @@ elseif Nvc>0
 
             if (mod(k,2)==1)
 
+                % 一帧导频
+
                 X_shift = X_pilot;
                 x = ifft(X_shift,Nfft)*sqrt(Nfft);
                 x_cp = add_CP(x,Nfft,Ng);
                 x_tr = [x_tr x_cp];
 
             elseif (mod(k,2)==0)
+
+                % 一帧数据
 
                 X_shift=[0 X(kk2) zeros(1,Nvc-1) X(kk1)];
 
