@@ -80,7 +80,7 @@ if Nvc==0
     X_data=extract_data(X_mod,Ndata,Nframe,Nps); % extract the data from the pilot
 
 
-else
+elseif Nvc>0
 
     X_mod=[];
 
@@ -96,12 +96,14 @@ else
     for k=1:Nframe
 
 
-        y_handle=y_data(kk1);
-        y_outcp=outcp(y_handle,Nfft,Ng); % Remove CP
+        y_handle = y_data(kk1);
+        y_outcp = outcp(y_handle,Nfft,Ng); % Remove CP
 
-        Y=fft(y_outcp,Nfft)/sqrt(Nfft);
+        Y = fft(y_outcp,Nfft)/sqrt(Nfft);
 
         % Y_shift=fftshift(Y(kk2));
+
+        if (mod(k,2)==1)
 
         channel_length=201;
 

@@ -7,7 +7,7 @@ Ng=Nsym-Nfft; % CP length
 
 if Nvc==0
 
-    H_frame=z
+    H_frame=zeros(Nframe,Nfft);
 
     noise_eq=1;
 
@@ -47,6 +47,8 @@ if Nvc==0
             channel_length=201;
             H_DFT=LS_DFT(H_est,channel_length);
 
+            H_frame(k,:)=H_DFT;
+
 
             % Xmod_r=Y_shift./H_DFT([[(Nvc~=0)+[1:Ndata/2]],[Ndata/2+Nvc+1:Nfft]]);
             Xmod_r=Y_shift./H_DFT;
@@ -78,7 +80,7 @@ if Nvc==0
     X_data=extract_data(X_mod,Ndata,Nframe,Nps); % extract the data from the pilot
 
 
-else
+elseif Nvc>0
 
     X_mod=[];
 

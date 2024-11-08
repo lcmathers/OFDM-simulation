@@ -1,15 +1,3 @@
-%% 交织解码的过程使得fd增加性能反而变好
-%% 交织的两步使得fd增加性能反而变好
-%% 在另一个场景的信道下，fd的增加会导致性能变差 ()
-%% 多普勒设置的问题，设置为半边Jakes谱，会有上述问题
-%% 而且这个问题是发生在 （QPSK，BPSk）并且交织比较分散的情况下（交织列数比较多）
-
-%% 可能是有信道估计的插值问题 （有虚拟子载波的情况下）
-%% 在vc置0的情况下，也会出现这个问题
-%% 交织的深度（列数）不够时，性能也是变差的
-
-
-
 clc;clear all; close all;
 
 BER_idk=zeros(5,7);
@@ -67,7 +55,12 @@ BER_ofdm_soft=zeros(1,length(EbN0));
 Nsym=Nfft+Ng;
 Ndata=Nfft-Nvc;
 
-[X_pilot,pilot_loc]=generate_pilot(Nfft,Nps,Nvc,Ndata);
+% [X_pilot,pilot_loc]=generate_pilot(Nfft,Nps,Nvc,Ndata);
+
+for k=1:Nfft
+    X_pilot(k)=exp(1j*pi*(k-1)^2/Nfft);
+end
+
 
 
 %%
@@ -222,5 +215,3 @@ semilogy(EbN0,BER_ofdm);
 hold on;
 semilogy(EbN0,BER_ofdm_soft);
 legend('hard','soft')
-
-
