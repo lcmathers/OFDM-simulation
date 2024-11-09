@@ -4,9 +4,14 @@ BER_idk=zeros(5,7);
 totalerrors_idk=zeros(5,7);
 total_undecode=zeros(5,7);
 total_decode=zeros(5,7);
+total_decode_soft=zeros(5,7);
+
+count_fd=0;
 
 for fd=4000
 %% Parameters setting
+
+count_fd = count_fd+1;
 
 Nfft=1024;
 Ng=200;
@@ -32,7 +37,7 @@ ExtraNoise=0; % Extra noise sample
 EndNoise=0;  % End noise sample
 CFO=2.5;
 
-max_iter=10; % number of iter
+max_iter=1e2; % number of iter
 
 Nps=2; % the space of pilot symbol
 
@@ -86,9 +91,11 @@ for i=1:length(SNR_dB)
 
         raw_data=randi([0,1],rawbit_perframe,1);
 
-        trellis = poly2trellis(7,[171 133]);
+        % trellis = poly2trellis(7,[171 133]);
 
-        code_data=convenc(raw_data,trellis);
+        % code_data=convenc(raw_data,trellis);
+
+        code_data = LDPC_code(raw_data);
 
         % inter_data=matintrlv(code_data,length(code_data)/20,20);
         inter_data=tx_interleaver(code_data,270);
@@ -170,24 +177,30 @@ for i=1:length(SNR_dB)
         Y_llr_deinter= rx_deinterleave(Y_data_llr_1,270);
         y_data_deinter=rx_deinterleave(Y_data_1,270);
 
-        tblen=32;
-        decode_data = vitdec(y_data_deinter,trellis,tblen,'trunc','hard');
+        %tblen=32;
+        %decode_data = vitdec(y_data_deinter,trellis,tblen,'trunc','hard');
 
-        decode_data_soft = vitdec(Y_llr_deinter,poly2trellis(7,[171 133]),tblen,'trunc','unquant');
+        %decode_data_soft = vitdec(Y_llr_deinter,poly2trellis(7,[171 133]),tblen,'trunc','unquant');
+
+
+        LDPC_iter = 10;
+        decode_data_soft = LDPC_decode(Y_llr_deinter,LDPC_iter);
 
 
         % total_biterrors(i)=total_biterrors(i)+sum(decode_data(tblen+1:end)~=raw_data(1:end-tblen));
-        total_biterrors(i)=total_biterrors(i)+sum(decode_data~=raw_data);
+        %total_biterrors(i)=total_biterrors(i)+sum(decode_data~=raw_data);
 
         total_decode(fd/1000+1,i)=total_biterrors(i);
 
        % total_biterrors_soft(i)=total_biterrors_soft(i)+sum(decode_data_soft(tblen+1:end)~=raw_data(1:end-tblen));
 
         total_biterrors_soft(i)=total_biterrors_soft(i)+sum(decode_data_soft~=raw_data);
-        
-        BER_ofdm(i)=total_biterrors(i)/(iter*(length(raw_data)-tblen));
 
-        BER_ofdm_soft(i)=total_biterrors_soft(i)/(iter*(length(raw_data)-tblen));
+        total_decode_soft(count_fd,i) = total_biterrors_soft(i);
+        
+        BER_ofdm(i)=total_biterrors(i)/(iter*(length(raw_data)));
+
+        BER_ofdm_soft(i)=total_biterrors_soft(i)/(iter*(length(raw_data)));
 
 
 
@@ -211,4 +224,4 @@ figure;
 semilogy(EbN0,BER_ofdm);
 hold on;
 semilogy(EbN0,BER_ofdm_soft);
-legend('hard','soft')
+legend('hard','soft');
