@@ -44,73 +44,74 @@ end
 
 elseif Nvc>0
 
-%% 这是以前的代码
-        % x_tr=[];
-        % X_total=[];
-
-%         for k=1:Nframe
-% 
-%             X_data_current=X((k-1)*Ndata/2+1:k*Ndata/2);
-% 
-% %             X_tx=zeros(1,Nfft);
-% % 
-% %             X_tx(pilot_loc_outvc)=[X_pilot(Ndata/4+1:end) X_pilot(1:Ndata/4)];
-% %             X_tx(loc_Data_outvc)=[X_data_current(Ndata/4+1:end) X_data_current(1:Ndata/4)];
-% 
-%             X_tx=add_pilot_vc(X_data_current,X_pilot,Ndata,Nvc);
-% 
-% 
-%             x=ifft(X_tx,Nfft)*sqrt(Nfft);
-% 
-%             x_cp=add_CP(x,Nfft,Ng);
-% 
-%             x_tr=[x_tr x_cp];
-% 
-%         end
-
-%% 这是为了改变信道估计方法而写的代码
-
-        kk1=1:Ndata/2;
-        kk2=Ndata/2+1:Ndata;
-        kk3=1:Nfft;
-        kk4=1:Nsym;
-
+%% 这是还是每个符号都插入导频的方法
         x_tr=[];
         X_total=[];
 
-
-
-
         for k=1:Nframe
 
-            if (mod(k,2)==1)
+            X_data_current=X((k-1)*Ndata/2+1:k*Ndata/2);
 
-                % 一帧导频
+%             X_tx=zeros(1,Nfft);
+% 
+%             X_tx(pilot_loc_outvc)=[X_pilot(Ndata/4+1:end) X_pilot(1:Ndata/4)];
+%             X_tx(loc_Data_outvc)=[X_data_current(Ndata/4+1:end) X_data_current(1:Ndata/4)];
 
-                X_shift = X_pilot;
-                x = ifft(X_shift,Nfft)*sqrt(Nfft);
-                x_cp = add_CP(x,Nfft,Ng);
-                x_tr = [x_tr x_cp];
-
-            elseif (mod(k,2)==0)
-
-                % 一帧数据
-
-                X_shift=[0 X(kk2) zeros(1,Nvc-1) X(kk1)];
+            X_tx=add_pilot_vc(X_data_current,X_pilot,Ndata,Nvc);
 
 
-                x = ifft(X_shift,Nfft)*sqrt(Nfft);
-                x_cp = add_CP(x,Nfft,Ng);
+            x=ifft(X_tx,Nfft)*sqrt(Nfft);
 
-                x_tr=[x_tr x_cp];
+            x_cp=add_CP(x,Nfft,Ng);
 
-                kk1= kk1+Ndata;
-                kk2= kk2+Ndata;
-                kk3= kk3+Nfft;
-                kk4= kk4+Nsym;
+            x_tr=[x_tr x_cp];
 
-            end
         end
+
+%% 这是为了改变信道估计方法而写的代码
+%% 这是一个导频，一个符号的代码
+
+        % kk1=1:Ndata/2;
+        % kk2=Ndata/2+1:Ndata;
+        % kk3=1:Nfft;
+        % kk4=1:Nsym;
+        % 
+        % x_tr=[];
+        % X_total=[];
+        % 
+        % 
+        % 
+        % 
+        % for k=1:Nframe
+        % 
+        %     if (mod(k,2)==1)
+        % 
+        %         % 一帧导频
+        % 
+        %         X_shift = X_pilot;
+        %         x = ifft(X_shift,Nfft)*sqrt(Nfft);
+        %         x_cp = add_CP(x,Nfft,Ng);
+        %         x_tr = [x_tr x_cp];
+        % 
+        %     elseif (mod(k,2)==0)
+        % 
+        %         % 一帧数据
+        % 
+        %         X_shift=[0 X(kk2) zeros(1,Nvc-1) X(kk1)];
+        % 
+        % 
+        %         x = ifft(X_shift,Nfft)*sqrt(Nfft);
+        %         x_cp = add_CP(x,Nfft,Ng);
+        % 
+        %         x_tr=[x_tr x_cp];
+        % 
+        %         kk1= kk1+Ndata;
+        %         kk2= kk2+Ndata;
+        %         kk3= kk3+Nfft;
+        %         kk4= kk4+Nsym;
+        % 
+        %     end
+        % end
 
     
 end

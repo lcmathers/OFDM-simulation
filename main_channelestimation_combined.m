@@ -5,7 +5,7 @@ totalerrors_idk=zeros(5,7);
 total_undecode=zeros(5,7);
 total_decode=zeros(5,7);
 
-for fd=1000
+for fd=4000
 %% Parameters setting
 
 Nfft=1024;
@@ -25,7 +25,7 @@ fmax=500; % enroute max Doppler
 
 R_code=1/2; % channel code rate
 
-EbN0=[30];
+EbN0=[0:5:30];
 
 % SNR_dB=[0:5:30]
 ExtraNoise=0; % Extra noise sample
@@ -55,12 +55,7 @@ BER_ofdm_soft=zeros(1,length(EbN0));
 Nsym=Nfft+Ng;
 Ndata=Nfft-Nvc;
 
-% [X_pilot,pilot_loc]=generate_pilot(Nfft,Nps,Nvc,Ndata);
-
-for k=1:Nfft
-    X_pilot(k)=exp(1j*pi*(k-1)^2/Nfft);
-end
-
+[X_pilot,pilot_loc]=generate_pilot(Nfft,Nps,Nvc,Ndata);
 
 
 %%
@@ -146,13 +141,19 @@ for i=1:length(SNR_dB)
         % decompose the frame
 
         % h=1;
-        [Y_est_data,H_DFT,H_frame]=frame_decompose(y_data,Nfft,Nsym,Ndata,Nvc,Nframe,channeltype,X_pilot,Nps);
+        [Y_est_data,H_DFT,H_frame] = frame_decompose(y_data,Nfft,Nsym,Ndata,Nvc,Nframe,channeltype,X_pilot,Nps);
 
-        % noise_var_eq=mean(noise_mean);
+        data_loc_1 = [3:2:487];
+        data_loc_2 = [540:2:1024];
+        data_loc = [data_loc_1 data_loc_2];
 
-        H_frame = reshape(H_frame.',1,[]);
+        H_frame_1 = reshape(H_frame.',1,[]);
 
-        H_frame_signal = H_frame(2:2:end);
+        for k=1:Nframe
+
+        H_frame_signal((k-1)*length(data_loc)+1:k*length(data_loc)) = H_frame_1(data_loc+(k-1)*Nfft);
+
+        end
 
         noise_var_eq = noise_var./abs(H_frame_signal).^2;  % 计算每一个符号的噪声功率
 
@@ -162,21 +163,17 @@ for i=1:length(SNR_dB)
 
         total_undecode(fd/1000+1,i)=total_undecode(fd/1000+1,i)+sum(Y_data_1~=inter_data);
 
-        % Y_data_llr=qamdemod(Y_est_data,M_mod,'OutputType','approxllr','NoiseVariance',noise_var_eq,'UnitAveragePower',true);  % 每一个符号的噪声功率是不一样的！！！
+        Y_data_llr=qamdemod(Y_est_data,M_mod,'OutputType','approxllr','NoiseVariance',noise_var_eq,'UnitAveragePower',true);  % 每一个符号的噪声功率是不一样的！！！
 
-        % Y_data_llr_1=reshape(Y_data_llr,[],1);
+        Y_data_llr_1=reshape(Y_data_llr,[],1);
 
-        % Y_llr_deinter= rx_deinterleave(Y_data_llr_1,256);
+        Y_llr_deinter= rx_deinterleave(Y_data_llr_1,270);
         y_data_deinter=rx_deinterleave(Y_data_1,270);
-
-        % Y_llr_deinter= matdeintrlv(Y_data_llr,length(Y_data_llr)/40,40);
-
-        % Y_llr_deinter=double(Y_llr_deinter);
 
         tblen=32;
         decode_data = vitdec(y_data_deinter,trellis,tblen,'trunc','hard');
 
-        % decode_data_soft = vitdec(Y_llr_deinter,poly2trellis(7,[171 133]),tblen,'trunc','unquant');
+        decode_data_soft = vitdec(Y_llr_deinter,poly2trellis(7,[171 133]),tblen,'trunc','unquant');
 
 
         % total_biterrors(i)=total_biterrors(i)+sum(decode_data(tblen+1:end)~=raw_data(1:end-tblen));
@@ -186,7 +183,7 @@ for i=1:length(SNR_dB)
 
        % total_biterrors_soft(i)=total_biterrors_soft(i)+sum(decode_data_soft(tblen+1:end)~=raw_data(1:end-tblen));
 
-        % total_biterrors_soft(i)=total_biterrors_soft(i)+sum(decode_data_soft~=raw_data);
+        total_biterrors_soft(i)=total_biterrors_soft(i)+sum(decode_data_soft~=raw_data);
         
         BER_ofdm(i)=total_biterrors(i)/(iter*(length(raw_data)-tblen));
 
